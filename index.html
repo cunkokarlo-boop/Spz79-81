@@ -54,7 +54,7 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
     <button type="button" id="bKo" aria-pressed="true">Kontejneri</button>
   </div>
   <div class="row" role="group" aria-label="Usporedba">
-    <button type="button" data-var="nase" aria-pressed="true">Naše rješenje</button>
+    <button type="button" data-var="nase" aria-pressed="true">Preporuka</button>
     <button type="button" data-var="dva" aria-pressed="false">2 krila · sadašnji stupovi</button>
     <button type="button" data-var="sred" aria-pressed="false">2 krila · stup u sredini</button>
     <button type="button" data-var="van" aria-pressed="false">2 krila · van gabarita</button>
@@ -88,7 +88,7 @@ const S1=[0,40], S3=[4360,4400]; let S2=[1440,1480];
 // usporedba: naše rješenje i dvije varijante sa 2 klizna krila (samo za objašnjenje zašto ne može)
 const VARS={
   nase:{S2:[1440,1480],ko:[1522,2944],ok:true,
-    txt:'<b>Naše rješenje.</b> Tri krila: jedno za kante, dva teleskopska za kontejnere. Otvor za kontejnere je oko 2,88 m, pa oba kontejnera izlaze ravno van, svaki sam. Kante i vreće imaju svoj ulaz.'},
+    txt:'<b>Preporuka.</b> Tri krila: jedno za kante, dva teleskopska za kontejnere. Otvor za kontejnere je oko 2,88 m, pa oba kontejnera izlaze ravno van, svaki sam. Kante i vreće imaju svoj ulaz.'},
   dva:{S2:[1440,1480],ko:[1522,2944],two:true,red:0,lab:'zapinje za krilo',
     txt:'<b>2 krila sa sadašnjim stupovima ne može.</b> Svako krilo je pola širine (oko 2,2 m). Kad se otvori, staje ispred drugog krila, pa je slobodno samo oko 2,14 m. Za dva kontejnera treba oko 2,75 m. Lijevi kontejner ostaje oko 0,7 m iza krila i ne može van. Probaj gumb Kontejneri.'},
   van:{S2:[1440,1480],ko:[1522,2944],two:true,van:true,
