@@ -57,6 +57,7 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
     <button type="button" data-var="nase" aria-pressed="true">Naše rješenje</button>
     <button type="button" data-var="dva" aria-pressed="false">2 krila · sadašnji stupovi</button>
     <button type="button" data-var="sred" aria-pressed="false">2 krila · stup u sredini</button>
+    <button type="button" data-var="van" aria-pressed="false">2 krila · van gabarita</button>
   </div>
   <p class="opis" id="opis"></p>
   <div class="row" role="group" aria-label="Raspored kanti" id="rowRas">
@@ -90,6 +91,8 @@ const VARS={
     txt:'<b>Naše rješenje.</b> Tri krila: jedno za kante, dva teleskopska za kontejnere. Otvor za kontejnere je oko 2,88 m, pa oba kontejnera izlaze ravno van, svaki sam. Kante i vreće imaju svoj ulaz.'},
   dva:{S2:[1440,1480],ko:[1522,2944],two:true,red:0,lab:'zapinje za krilo',
     txt:'<b>2 krila sa sadašnjim stupovima ne može.</b> Svako krilo je pola širine (oko 2,2 m). Kad se otvori, staje ispred drugog krila, pa je slobodno samo oko 2,14 m. Za dva kontejnera treba oko 2,75 m. Lijevi kontejner ostaje oko 0,7 m iza krila i ne može van. Probaj gumb Kontejneri.'},
+  van:{S2:[1440,1480],ko:[1522,2944],two:true,van:true,
+    txt:'<b>2 krila koja izlaze van gabarita.</b> Da se oslobodi cijeli otvor za kontejnere, oba krila moraju otići lijevo iza srednjeg stupa. Svako je oko 2,2 m, pa izlaze oko 0,74 m van spremišta, zajedno s vodilicom. To mjesto mora uvijek biti slobodno. Probaj gumb Kontejneri.'},
   sred:{S2:[2180,2220],ko:[780,2603],two:true,red:0,lab:'ne stane uz kante',noVr:true,
     txt:'<b>2 krila sa stupom u sredini ne može.</b> Svaka polovica ima oko 2,14 m. U lijevu polovicu moraju stati kante (0,74 m) i kontejner (1,38 m) s razmacima, a to je oko 2,18 m. Kontejner ne stane, a za vreće nema mjesta. Uz to se otvara samo jedna polovica, jer krilo uvijek staje ispred druge.'}};
 let vv='nase';
@@ -147,6 +150,7 @@ function kostur(){return KOSTUR.map(([id,grp,vs])=>{vs=vs.map(v=>[v[0]>=4200?v[0
   return [id,grp,vs.map(f)]})}
 // krila: lijevo (kante) i 2 teleskopska desna (kontejneri)
 function plan(){if(VARS[vv].two){const zt=i=>TR.z0+i*(TR.t+TR.gap),w=2220;
+    if(VARS[vv].van){const pk=S2[1]-w;return {ks:[{w,x0:0,z:zt(0),c:0,open:{L:S2[0],R:pk}},{w,x0:L-w,z:zt(1),c:1,open:{L:L-w,R:pk}}],zmax:zt(2),n:2,out:-pk}}
     return {ks:[{w,x0:0,z:zt(0),c:0,open:{L:L-w,R:0}},{w,x0:L-w,z:zt(1),c:1,open:{L:L-w,R:0}}],zmax:zt(2),n:2}}
   const o=TR.ov,R=S3[0],p=S2[1],W=R-p,rw=(W+3*o)/2,lw=S2[0]-S1[1]+2*o,zt=i=>TR.z0+i*(TR.t+TR.gap);
   const ks=[{w:lw,x0:S1[1]-o,z:zt(0),c:0,open:{L:S2[0],R:S1[1]-o}}];
@@ -166,7 +170,9 @@ function build(){
   panelZ(root,-30,0,0,D,50,rogDno(0),rogDno(D),30);
   panelZ(root,L,L+30,0,D,50,rogDno(0),rogDno(D),30);
   addB(root,sbox(0,L,0,30,D,P.zmax+5),C.steel);
-  for(let i=0;i<P.n;i++){const z=TR.z0+i*(TR.t+TR.gap)+TR.t/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(10,10,L,14),mat(C.rail));r.rotation.z=Math.PI/2;r.position.set(L/2,40,z);root.add(r)}
+  const xo=-(P.out||0);for(let i=0;i<P.n;i++){const z=TR.z0+i*(TR.t+TR.gap)+TR.t/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(10,10,L-xo,14),mat(C.rail));r.rotation.z=Math.PI/2;r.position.set((L+xo)/2,40,z);root.add(r)}
+  if(P.out){addB(root,sbox(xo,0,0,30,D,P.zmax+5),C.steel);addB(root,sbox(xo,0,-6,2,D-200,P.zmax+300),0xc0392b,{transparent:true,opacity:.55},false);
+    label(root,Math.round(P.out)+' mm van gabarita',xo/2,2350,P.zmax+150)}
   addB(root,sbox(0,L,2030,2060,D,P.zmax+5),C.steel);
   leaves=P.ks.map(k=>{const g=new THREE.Group();root.add(g);panelX(g,k.x0,k.x0+k.w,TR.y0,TR.y1,k.z,k.z+TR.t,40,C.kr[k.c]);
     [k.x0+90,k.x0+k.w-90].forEach(x=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(40,40,24,24),mat(C.whl));w.rotation.x=Math.PI/2;w.position.set(x,50,k.z+TR.t/2);g.add(w)});
