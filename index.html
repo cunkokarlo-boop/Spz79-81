@@ -28,6 +28,9 @@ h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut)
 .sep{width:1px;background:var(--line);margin:2px 4px}
 ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
 .err{padding:20px;color:var(--mut)}
+.opis{margin:0;max-width:70ch;padding:10px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line)}
+.opis b{color:#c0392b}
+.opis.ok b{color:var(--acc)}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap">
 
@@ -50,7 +53,13 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
     <button type="button" id="bMr" aria-pressed="true">Sva mreža</button>
     <button type="button" id="bKo" aria-pressed="true">Kontejneri</button>
   </div>
-  <div class="row" role="group" aria-label="Raspored kanti">
+  <div class="row" role="group" aria-label="Usporedba">
+    <button type="button" data-var="nase" aria-pressed="true">Naše rješenje</button>
+    <button type="button" data-var="dva" aria-pressed="false">2 krila · sadašnji stupovi</button>
+    <button type="button" data-var="sred" aria-pressed="false">2 krila · stup u sredini</button>
+  </div>
+  <p class="opis" id="opis"></p>
+  <div class="row" role="group" aria-label="Raspored kanti" id="rowRas">
     <button type="button" data-ras="bok" aria-pressed="true">Kante uz bok, vreće do kontejnera</button>
     <button type="button" data-ras="kont" aria-pressed="false">Kante do kontejnera, vreće uz bok</button>
   </div>
@@ -74,10 +83,22 @@ const C={steel:0x3b4144,mesh:0x9aa3a8,ground:0x6d7275,plate:0x8a6d3b,kont:0x7c84
   kr:[0x2d5d62,0x7a4e2d,0x4a5a8a]};
 // Varijanta H2: 4400, sva tri prednja stupa zakrenuta (40 po širini, 80 po dubini, ispod N), SP2 uz desni rub stope
 const DX=100, L=4300+DX, D=1400;
-const S1=[0,40], S2=[1440,1480], S3=[4360,4400];
+const S1=[0,40], S3=[4360,4400]; let S2=[1440,1480];
+// usporedba: naše rješenje i dvije varijante sa 2 klizna krila (samo za objašnjenje zašto ne može)
+const VARS={
+  nase:{S2:[1440,1480],ko:[1522,2944],ok:true,
+    txt:'<b>Naše rješenje.</b> Tri krila: jedno za kante, dva teleskopska za kontejnere. Otvor za kontejnere je oko 2,88 m, pa oba kontejnera izlaze ravno van, svaki sam. Kante i vreće imaju svoj ulaz.'},
+  dva:{S2:[1440,1480],ko:[1522,2944],two:true,red:0,lab:'zapinje za krilo',
+    txt:'<b>2 krila sa sadašnjim stupovima ne može.</b> Svako krilo je pola širine (oko 2,2 m). Kad se otvori, staje ispred drugog krila, pa je slobodno samo oko 2,14 m. Za dva kontejnera treba oko 2,75 m. Lijevi kontejner ostaje oko 0,7 m iza krila i ne može van. Probaj gumb Kontejneri.'},
+  sred:{S2:[2180,2220],ko:[780,2603],two:true,red:0,lab:'ne stane uz kante',noVr:true,
+    txt:'<b>2 krila sa stupom u sredini ne može.</b> Svaka polovica ima oko 2,14 m. U lijevu polovicu moraju stati kante (0,74 m) i kontejner (1,38 m) s razmacima, a to je oko 2,18 m. Kontejner ne stane, a za vreće nema mjesta. Uz to se otvara samo jedna polovica, jer krilo uvijek staje ispred druge.'}};
+let vv='nase';
 const TR={z0:1420,t:40,gap:15,ov:40,y0:90,y1:2010};
 // kontejneri: Europlast 1100 (klizni poklopac) i ESE 1100 (ravni poklopac); kante ESE 240 zakrenute uz lijevi bok
 const KO=[{x0:1522,w:1380,d:1070,h:1450},{x0:2944,w:1373,d:1073,h:1354}], KOZ=60;
+function label(par,txt,x,y,z){const c=document.createElement('canvas');c.width=760;c.height=140;const g=c.getContext('2d');
+  g.fillStyle='rgba(192,57,43,.95)';g.fillRect(0,0,760,140);g.fillStyle='#fff';g.font='600 64px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,380,74);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));sp.scale.set(760,140,1);sp.position.set(x,y,z);sp.renderOrder=10;par.add(sp)}
 const KA={w:583,d:737,h:1079};
 // rasporedi: bok = kante uz lijevi bok (ručke uz bok), kont = kante do kontejnera (ručke prema srednjem stupu); poklopci se otvaraju prema vrećama
 const RAS={bok:{x:60,rot:-Math.PI/2,vx:[60+737+20,1420]},kont:{x:1420-737,rot:Math.PI/2,vx:[60,1420-737-20]}};let ras='bok';
@@ -121,15 +142,18 @@ function kostur(){return KOSTUR.map(([id,grp,vs])=>{vs=vs.map(v=>[v[0]>=4200?v[0
   if(id==='SP1')f=post(S1);else if(id==='SP2')f=post(S2);else if(id==='SP3')f=post(S3);
   else if(id==='DP1')f=v=>[v[0]===80?S1[1]:S2[0],v[1],v[2]];
   else if(id==='TP')f=v=>[v[0]===1480?S2[1]:S3[0],v[1],v[2]];
+  else if(id==='stopeP'&&mn>1000&&mn<2000)f=v=>[v[0]+S2[0]-1440,v[1],v[2]];
   else if(id==='DB1'||id==='DB2')f=v=>[v[0],v[1],v[2]===1360?1320:v[2]];
   return [id,grp,vs.map(f)]})}
 // krila: lijevo (kante) i 2 teleskopska desna (kontejneri)
-function plan(){const o=TR.ov,R=S3[0],p=S2[1],W=R-p,rw=(W+3*o)/2,lw=S2[0]-S1[1]+2*o,zt=i=>TR.z0+i*(TR.t+TR.gap);
+function plan(){if(VARS[vv].two){const zt=i=>TR.z0+i*(TR.t+TR.gap),w=2220;
+    return {ks:[{w,x0:0,z:zt(0),c:0,open:{L:L-w,R:0}},{w,x0:L-w,z:zt(1),c:1,open:{L:L-w,R:0}}],zmax:zt(2),n:2}}
+  const o=TR.ov,R=S3[0],p=S2[1],W=R-p,rw=(W+3*o)/2,lw=S2[0]-S1[1]+2*o,zt=i=>TR.z0+i*(TR.t+TR.gap);
   const ks=[{w:lw,x0:S1[1]-o,z:zt(0),c:0,open:{L:S2[0],R:S1[1]-o}}];
   for(let i=0;i<2;i++){const x0=p-o+i*(rw-o);ks.push({w:rw,x0,z:zt(i+1),c:i+1,open:{L:x0,R:p-rw}})}
-  return {ks,zmax:zt(3)}}
+  return {ks,zmax:zt(3),n:3}}
 function build(){
-  if(!scene)return;if(root)scene.remove(root);root=new THREE.Group();scene.add(root);const P=plan();
+  if(!scene)return;if(root)scene.remove(root);root=new THREE.Group();scene.add(root);const V=VARS[vv];S2=V.S2;const P=plan();
   addB(root,sbox(-600,L+600,-90,-8,-700,D+1000),C.ground,{},false);
   const roof=new THREE.Group();roof.name='krov';root.add(roof);
   kostur().forEach(([id,grp,vs])=>addB(grp==='KROV'?roof:root,quad(vs),grp==='PLOČICE'?C.plate:C.steel));
@@ -142,7 +166,7 @@ function build(){
   panelZ(root,-30,0,0,D,50,rogDno(0),rogDno(D),30);
   panelZ(root,L,L+30,0,D,50,rogDno(0),rogDno(D),30);
   addB(root,sbox(0,L,0,30,D,P.zmax+5),C.steel);
-  for(let i=0;i<3;i++){const z=TR.z0+i*(TR.t+TR.gap)+TR.t/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(10,10,L,14),mat(C.rail));r.rotation.z=Math.PI/2;r.position.set(L/2,40,z);root.add(r)}
+  for(let i=0;i<P.n;i++){const z=TR.z0+i*(TR.t+TR.gap)+TR.t/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(10,10,L,14),mat(C.rail));r.rotation.z=Math.PI/2;r.position.set(L/2,40,z);root.add(r)}
   addB(root,sbox(0,L,2030,2060,D,P.zmax+5),C.steel);
   leaves=P.ks.map(k=>{const g=new THREE.Group();root.add(g);panelX(g,k.x0,k.x0+k.w,TR.y0,TR.y1,k.z,k.z+TR.t,40,C.kr[k.c]);
     [k.x0+90,k.x0+k.w-90].forEach(x=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(40,40,24,24),mat(C.whl));w.rotation.x=Math.PI/2;w.position.set(x,50,k.z+TR.t/2);g.add(w)});
@@ -150,17 +174,18 @@ function build(){
   const kg=new THREE.Group();kg.name='kont';kg.visible=showKo;root.add(kg);
   const tb=(x0,x1,y0,y1,z0,z1,f)=>box8([[x0+f,y0,z0+f],[x1-f,y0,z0+f],[x1,y1,z0],[x0,y1,z0],[x0+f,y0,z1-f],[x1-f,y0,z1-f],[x1,y1,z1],[x0,y1,z1]]);
   const cyl=(par,r,len,x,y,z,c)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,18),mat(c));m.rotation.z=Math.PI/2;m.position.set(x,y,z);par.add(m)};
-  KO.forEach(K=>{const x0=K.x0,x1=x0+K.w,z0=KOZ,z1=KOZ+K.d;
-    addB(kg,tb(x0+20,x1-20,150,K.h-70,z0+20,z1-20,45),C.kont);addB(kg,tb(x0,x1,K.h-70,K.h,z0,z1,0),C.kont);
+  KO.forEach((K,i)=>{const x0=V.ko[i],x1=x0+K.w,z0=KOZ,z1=KOZ+K.d,cc=V.red===i?0xc0392b:C.kont;
+    addB(kg,tb(x0+20,x1-20,150,K.h-70,z0+20,z1-20,45),cc);addB(kg,tb(x0,x1,K.h-70,K.h,z0,z1,0),cc);
+    if(V.red===i)label(kg,V.lab,(x0+x1)/2,K.h+260,z1);
     [[x0+110,z0+120],[x1-110,z0+120],[x0+110,z1-120],[x1-110,z1-120]].forEach(([x,z])=>{cyl(kg,75,40,x,75,z,C.whl);addB(kg,tb(x-35,x+35,150,175,z-35,z+35,0),C.rail)});
     cyl(kg,14,K.w-160,(x0+x1)/2,K.h-260,z1+15,C.rail)});
   // kante zakrenute: ručke i kotači uz lijevi bok, poklopac se otvara prema unutra
-  const RS=RAS[ras];[60,683].forEach(z=>{const g=new THREE.Group();g.position.set(RS.x+KA.d/2,0,z+KA.w/2);g.rotation.y=RS.rot;kg.add(g);
+  const RS=RAS[V.two&&vv==='sred'?'bok':ras];[60,683].forEach(z=>{const g=new THREE.Group();g.position.set(RS.x+KA.d/2,0,z+KA.w/2);g.rotation.y=RS.rot;kg.add(g);
     const x0=-KA.w/2,x1=KA.w/2,z0=-KA.d/2,z1=KA.d/2;
     addB(g,tb(x0+15,x1-15,0,KA.h-75,z0+15,z1-40,35),C.kanta);addB(g,tb(x0,x1,KA.h-75,KA.h-40,z0,z1-10,0),C.kanta);
     cyl(g,100,40,x0+40,100,z1-90,C.whl);cyl(g,100,40,x1-40,100,z1-90,C.whl);cyl(g,14,KA.w-120,0,KA.h-40,z1+5,C.kanta)});
   // vreće uz kante
-  {const cx=(RS.vx[0]+RS.vx[1])/2;[330,900].forEach(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(250,230,800,20),mat(0x2b2f31,{transparent:true,opacity:.7}));m.position.set(cx,400,z);kg.add(m)})}
+  if(!V.noVr){const cx=(RS.vx[0]+RS.vx[1])/2;[330,900].forEach(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(250,230,800,20),mat(0x2b2f31,{transparent:true,opacity:.7}));m.position.set(cx,400,z);kg.add(m)})}
 }
 function goal(l){return want==='0'?l.k.x0:l.k.open[want]}
 function setDoor(d){want=d;document.querySelectorAll('[data-d]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d))}
@@ -172,6 +197,10 @@ function setRoof(v){showRoof=v;$('bKrov').setAttribute('aria-pressed',v);const r
 document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>setDoor(b.dataset.d));
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 document.querySelectorAll('[data-ras]').forEach(b=>b.onclick=()=>{ras=b.dataset.ras;document.querySelectorAll('[data-ras]').forEach(c=>c.setAttribute('aria-pressed',c===b));const w=want,xs=leaves.map(l=>l.x);build();leaves.forEach((l,i)=>{l.x=xs[i];l.g.position.x=l.x});want=w});
+function setVar(v){vv=v;document.querySelectorAll('[data-var]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.var===v));
+  const o=$('opis');o.innerHTML=VARS[v].txt;o.className='opis'+(VARS[v].ok?' ok':'');$('rowRas').hidden=v==='sred';want='0';setDoor('0');build()}
+document.querySelectorAll('[data-var]').forEach(b=>b.onclick=()=>setVar(b.dataset.var));
+$('opis').innerHTML=VARS.nase.txt;$('opis').className='opis ok';
 $('bKrov').onclick=()=>setRoof(!showRoof);
 $('bMr').onclick=()=>{showMr=!showMr;$('bMr').setAttribute('aria-pressed',showMr);root&&root.traverse(o=>{if(o.name==='mr')o.visible=showMr})};
 $('bKo').onclick=()=>{showKo=!showKo;$('bKo').setAttribute('aria-pressed',showKo);const k=root&&root.getObjectByName('kont');if(k)k.visible=showKo};
