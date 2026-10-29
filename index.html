@@ -119,7 +119,7 @@ function kostur(){return KOSTUR.map(([id,grp,vs])=>{vs=vs.map(v=>[v[0]>=4200?v[0
   return [id,grp,vs.map(f)]})}
 // krila: lijevo (kante) i 2 teleskopska desna (kontejneri)
 function plan(){const o=TR.ov,R=S3[0],p=S2[1],W=R-p,rw=(W+3*o)/2,lw=S2[0]-S1[1]+2*o,zt=i=>TR.z0+i*(TR.t+TR.gap);
-  const ks=[{w:lw,x0:S1[1]-o,z:zt(0),c:0,open:{L:R+o-lw,R:S1[1]-o}}];
+  const ks=[{w:lw,x0:S1[1]-o,z:zt(0),c:0,open:{L:S2[0],R:S1[1]-o}}];
   for(let i=0;i<2;i++){const x0=p-o+i*(rw-o);ks.push({w:rw,x0,z:zt(i+1),c:i+1,open:{L:x0,R:p-rw}})}
   return {ks,zmax:zt(3)}}
 function build(){
