@@ -1,0 +1,186 @@
+<!doctype html><html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SPZ 79/81</title>
+<style>
+:root{
+  --bg:#eef0ef; --panel:#ffffff; --fg:#1a1f22; --mut:#5a656c; --line:#d3d8d7; --scene:#dfe4e3; --acc:#2d5d62;
+  --f-ui:"IBM Plex Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121618; --panel:#1a2023; --fg:#e6eaeb; --mut:#98a3a8; --line:#2d3538; --scene:#2a3134; --acc:#5aa3a9; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121618; --panel:#1a2023; --fg:#e6eaeb; --mut:#98a3a8; --line:#2d3538; --scene:#2a3134; --acc:#5aa3a9; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.45;margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding-block:12px 36px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:12px}
+h1{font-size:20px;margin:0;font-weight:600;text-wrap:balance}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:0 0 8px;font-weight:600}
+.stage{position:relative;height:clamp(360px,calc(100svh - 250px),640px);background:var(--scene);border:1px solid var(--line);border-radius:10px;overflow:hidden;touch-action:none}
+.stage canvas{display:block;width:100%;height:100%}
+.doors{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:8px;max-width:calc(100% - 20px)}
+.doors button{font:600 15px var(--f-ui);padding:12px 18px;border-radius:999px;border:0;background:var(--acc);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:nowrap}
+.doors button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.doors button:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+@media (max-width:420px){.doors button{font-size:14px;padding:11px 13px}}
+.hint{position:absolute;left:10px;top:10px;font-size:12px;color:var(--mut);background:var(--panel);padding:4px 9px;border-radius:999px;border:1px solid var(--line);opacity:.9}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.row button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:8px 13px;border-radius:999px;cursor:pointer}
+.row button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.row button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.sep{width:1px;background:var(--line);margin:2px 4px}
+ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
+.err{padding:20px;color:var(--mut)}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<div class="wrap">
+  <h1>SPZ 79/81 · spremište za kontejnere</h1>
+  <div class="stage" id="stage">
+    <div class="hint">vrti prstom · dva prsta zoom</div>
+    <div class="doors" role="group" aria-label="Vrata">
+      <button type="button" data-d="R" aria-pressed="false">Kontejneri</button>
+      <button type="button" data-d="L" aria-pressed="false">Kante</button>
+      <button type="button" data-d="0" aria-pressed="true">Zatvori</button>
+    </div>
+  </div>
+  <div class="row" role="group" aria-label="Pogled">
+    <button type="button" data-v="iso" aria-pressed="true">3D</button>
+    <button type="button" data-v="front" aria-pressed="false">Sprijeda</button>
+    <button type="button" data-v="top" aria-pressed="false">Odozgo</button>
+    <span class="sep" aria-hidden="true"></span>
+    <button type="button" id="bKrov" aria-pressed="true">Krov</button>
+    <button type="button" id="bMr" aria-pressed="true">Sva mreža</button>
+    <button type="button" id="bKo" aria-pressed="true">Kontejneri</button>
+  </div>
+  <section>
+    <h2>Ukratko</h2>
+    <ul>
+      <li>Gabarit 4,40 × 1,40 m, visina oko 2,0 m. Krov ima prepust 0,5 m nad ulazom i pad prema natrag, pa voda ne curi na ulaz.</li>
+      <li>Dva ulaza na kliznim vratima: široki za dva kontejnera 1100 L (svijetli otvor oko 2,88 m) i manji za kante 240 L (oko 1,40 m).</li>
+      <li>Oba kontejnera izlaze ravno van, svaki sam, bez micanja drugoga.</li>
+      <li>Dvije kante stoje uz bok, s poklopcima okrenutima prema unutra. Uz njih je mjesto za vreće, odmah iza vrata.</li>
+      <li>Čelična konstrukcija s mrežom u okvirima, pokrov od lima.</li>
+    </ul>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const KOSTUR=[["SS1","KOSTUR",[[0,0,0],[0,1920,0],[0,1920,40],[0,0,40],[80,0,0],[80,1920,0],[80,1920,40],[80,0,40],[0,0,0],[0,1920,0],[80,1920,0],[80,0,0],[0,0,40],[0,1920,40],[80,1920,40],[80,0,40],[0,0,0],[0,0,40],[80,0,40],[80,0,0],[0,1920,0],[0,1920,40],[80,1920,40],[80,1920,0]]],["SS2","KOSTUR",[[2110,0,0],[2110,1920,0],[2110,1920,40],[2110,0,40],[2190,0,0],[2190,1920,0],[2190,1920,40],[2190,0,40],[2110,0,0],[2110,1920,0],[2190,1920,0],[2190,0,0],[2110,0,40],[2110,1920,40],[2190,1920,40],[2190,0,40],[2110,0,0],[2110,0,40],[2190,0,40],[2190,0,0],[2110,1920,0],[2110,1920,40],[2190,1920,40],[2190,1920,0]]],["SS3","KOSTUR",[[4220,0,0],[4220,1920,0],[4220,1920,40],[4220,0,40],[4300,0,0],[4300,1920,0],[4300,1920,40],[4300,0,40],[4220,0,0],[4220,1920,0],[4300,1920,0],[4300,0,0],[4220,0,40],[4220,1920,40],[4300,1920,40],[4300,0,40],[4220,0,0],[4220,0,40],[4300,0,40],[4300,0,0],[4220,1920,0],[4220,1920,40],[4300,1920,40],[4300,1920,0]]],["SP1","KOSTUR",[[0,0,1360],[0,1980,1360],[0,1980,1400],[0,0,1400],[80,0,1360],[80,1980,1360],[80,1980,1400],[80,0,1400],[0,0,1360],[0,1980,1360],[80,1980,1360],[80,0,1360],[0,0,1400],[0,1980,1400],[80,1980,1400],[80,0,1400],[0,0,1360],[0,0,1400],[80,0,1400],[80,0,1360],[0,1980,1360],[0,1980,1400],[80,1980,1400],[80,1980,1360]]],["SP2","KOSTUR",[[1400,0,1360],[1400,1980,1360],[1400,1980,1400],[1400,0,1400],[1480,0,1360],[1480,1980,1360],[1480,1980,1400],[1480,0,1400],[1400,0,1360],[1400,1980,1360],[1480,1980,1360],[1480,0,1360],[1400,0,1400],[1400,1980,1400],[1480,1980,1400],[1480,0,1400],[1400,0,1360],[1400,0,1400],[1480,0,1400],[1480,0,1360],[1400,1980,1360],[1400,1980,1400],[1480,1980,1400],[1480,1980,1360]]],["SP3","KOSTUR",[[4220,0,1360],[4220,1980,1360],[4220,1980,1400],[4220,0,1400],[4300,0,1360],[4300,1980,1360],[4300,1980,1400],[4300,0,1400],[4220,0,1360],[4220,1980,1360],[4300,1980,1360],[4300,0,1360],[4220,0,1400],[4220,1980,1400],[4300,1980,1400],[4300,0,1400],[4220,0,1360],[4220,0,1400],[4300,0,1400],[4300,0,1360],[4220,1980,1360],[4220,1980,1400],[4300,1980,1400],[4300,1980,1360]]],["PR","KOSTUR",[[0,1920,0],[0,2000,0],[0,2000,80],[0,1920,80],[4300,1920,0],[4300,2000,0],[4300,2000,80],[4300,1920,80],[0,1920,0],[0,2000,0],[4300,2000,0],[4300,1920,0],[0,1920,80],[0,2000,80],[4300,2000,80],[4300,1920,80],[0,1920,0],[0,1920,80],[4300,1920,80],[4300,1920,0],[0,2000,0],[0,2000,80],[4300,2000,80],[4300,2000,0]]],["N","KOSTUR",[[0,1980,1320],[0,2060,1320],[0,2060,1400],[0,1980,1400],[4300,1980,1320],[4300,2060,1320],[4300,2060,1400],[4300,1980,1400],[0,1980,1320],[0,2060,1320],[4300,2060,1320],[4300,1980,1320],[0,1980,1400],[0,2060,1400],[4300,2060,1400],[4300,1980,1400],[0,1980,1320],[0,1980,1400],[4300,1980,1400],[4300,1980,1320],[0,2060,1320],[0,2060,1400],[4300,2060,1400],[4300,2060,1320]]],["DS1","KOSTUR",[[80,50,0],[80,130,0],[80,130,40],[80,50,40],[2110,50,0],[2110,130,0],[2110,130,40],[2110,50,40],[80,50,0],[80,130,0],[2110,130,0],[2110,50,0],[80,50,40],[80,130,40],[2110,130,40],[2110,50,40],[80,50,0],[80,50,40],[2110,50,40],[2110,50,0],[80,130,0],[80,130,40],[2110,130,40],[2110,130,0]]],["DS2","KOSTUR",[[2190,50,0],[2190,130,0],[2190,130,40],[2190,50,40],[4220,50,0],[4220,130,0],[4220,130,40],[4220,50,40],[2190,50,0],[2190,130,0],[4220,130,0],[4220,50,0],[2190,50,40],[2190,130,40],[4220,130,40],[4220,50,40],[2190,50,0],[2190,50,40],[4220,50,40],[4220,50,0],[2190,130,0],[2190,130,40],[4220,130,40],[4220,130,0]]],["DP1","KOSTUR",[[80,50,1360],[80,130,1360],[80,130,1400],[80,50,1400],[1400,50,1360],[1400,130,1360],[1400,130,1400],[1400,50,1400],[80,50,1360],[80,130,1360],[1400,130,1360],[1400,50,1360],[80,50,1400],[80,130,1400],[1400,130,1400],[1400,50,1400],[80,50,1360],[80,50,1400],[1400,50,1400],[1400,50,1360],[80,130,1360],[80,130,1400],[1400,130,1400],[1400,130,1360]]],["TP","KOSTUR",[[1480,50,1360],[1480,130,1360],[1480,130,1400],[1480,50,1400],[4220,50,1360],[4220,130,1360],[4220,130,1400],[4220,50,1400],[1480,50,1360],[1480,130,1360],[4220,130,1360],[4220,50,1360],[1480,50,1400],[1480,130,1400],[4220,130,1400],[4220,50,1400],[1480,50,1360],[1480,50,1400],[4220,50,1400],[4220,50,1360],[1480,130,1360],[1480,130,1400],[4220,130,1400],[4220,130,1360]]],["DB1","KOSTUR",[[0,50,40],[0,130,40],[0,130,1360],[0,50,1360],[40,50,40],[40,130,40],[40,130,1360],[40,50,1360],[0,50,40],[0,130,40],[40,130,40],[40,50,40],[0,50,1360],[0,130,1360],[40,130,1360],[40,50,1360],[0,50,40],[0,50,1360],[40,50,1360],[40,50,40],[0,130,40],[0,130,1360],[40,130,1360],[40,130,40]]],["DB2","KOSTUR",[[4260,50,40],[4260,130,40],[4260,130,1360],[4260,50,1360],[4300,50,40],[4300,130,40],[4300,130,1360],[4300,50,1360],[4260,50,40],[4260,130,40],[4300,130,40],[4300,50,40],[4260,50,1360],[4260,130,1360],[4300,130,1360],[4300,50,1360],[4260,50,40],[4260,50,1360],[4300,50,1360],[4300,50,40],[4260,130,40],[4260,130,1360],[4300,130,1360],[4300,130,40]]],["R1","KROV",[[0,1998,0],[0,2048,0],[0,2135,1900],[0,2085,1900],[30,1998,0],[30,2048,0],[30,2135,1900],[30,2085,1900],[0,1998,0],[0,2048,0],[30,2048,0],[30,1998,0],[0,2085,1900],[0,2135,1900],[30,2135,1900],[30,2085,1900],[0,1998,0],[0,2085,1900],[30,2085,1900],[30,1998,0],[0,2048,0],[0,2135,1900],[30,2135,1900],[30,2048,0]]],["R2","KROV",[[1060,1998,0],[1060,2048,0],[1060,2135,1900],[1060,2085,1900],[1090,1998,0],[1090,2048,0],[1090,2135,1900],[1090,2085,1900],[1060,1998,0],[1060,2048,0],[1090,2048,0],[1090,1998,0],[1060,2085,1900],[1060,2135,1900],[1090,2135,1900],[1090,2085,1900],[1060,1998,0],[1060,2085,1900],[1090,2085,1900],[1090,1998,0],[1060,2048,0],[1060,2135,1900],[1090,2135,1900],[1090,2048,0]]],["R3","KROV",[[2125,1998,0],[2125,2048,0],[2125,2135,1900],[2125,2085,1900],[2175,1998,0],[2175,2048,0],[2175,2135,1900],[2175,2085,1900],[2125,1998,0],[2125,2048,0],[2175,2048,0],[2175,1998,0],[2125,2085,1900],[2125,2135,1900],[2175,2135,1900],[2175,2085,1900],[2125,1998,0],[2125,2085,1900],[2175,2085,1900],[2175,1998,0],[2125,2048,0],[2125,2135,1900],[2175,2135,1900],[2175,2048,0]]],["R4","KROV",[[3210,1998,0],[3210,2048,0],[3210,2135,1900],[3210,2085,1900],[3240,1998,0],[3240,2048,0],[3240,2135,1900],[3240,2085,1900],[3210,1998,0],[3210,2048,0],[3240,2048,0],[3240,1998,0],[3210,2085,1900],[3210,2135,1900],[3240,2135,1900],[3240,2085,1900],[3210,1998,0],[3210,2085,1900],[3240,2085,1900],[3240,1998,0],[3210,2048,0],[3210,2135,1900],[3240,2135,1900],[3240,2048,0]]],["R5","KROV",[[4270,1998,0],[4270,2048,0],[4270,2135,1900],[4270,2085,1900],[4300,1998,0],[4300,2048,0],[4300,2135,1900],[4300,2085,1900],[4270,1998,0],[4270,2048,0],[4300,2048,0],[4300,1998,0],[4270,2085,1900],[4270,2135,1900],[4300,2135,1900],[4300,2085,1900],[4270,1998,0],[4270,2085,1900],[4300,2085,1900],[4300,1998,0],[4270,2048,0],[4270,2135,1900],[4300,2135,1900],[4300,2048,0]]],["PM","KROV",[[0,2096,917],[0,2130,917],[0,2133,983],[0,2099,983],[4300,2096,917],[4300,2130,917],[4300,2133,983],[4300,2099,983],[0,2096,917],[0,2130,917],[4300,2130,917],[4300,2096,917],[0,2099,983],[0,2133,983],[4300,2133,983],[4300,2099,983],[0,2096,917],[0,2099,983],[4300,2099,983],[4300,2096,917],[0,2130,917],[0,2133,983],[4300,2133,983],[4300,2130,917]]],["stopeS","PLOČICE",[[-10,-8,-60],[-10,0,-60],[-10,0,100],[-10,-8,100],[90,-8,-60],[90,0,-60],[90,0,100],[90,-8,100],[-10,-8,-60],[-10,0,-60],[90,0,-60],[90,-8,-60],[-10,-8,100],[-10,0,100],[90,0,100],[90,-8,100],[-10,-8,-60],[-10,-8,100],[90,-8,100],[90,-8,-60],[-10,0,-60],[-10,0,100],[90,0,100],[90,0,-60]]],["stopeS","PLOČICE",[[2100,-8,-60],[2100,0,-60],[2100,0,100],[2100,-8,100],[2200,-8,-60],[2200,0,-60],[2200,0,100],[2200,-8,100],[2100,-8,-60],[2100,0,-60],[2200,0,-60],[2200,-8,-60],[2100,-8,100],[2100,0,100],[2200,0,100],[2200,-8,100],[2100,-8,-60],[2100,-8,100],[2200,-8,100],[2200,-8,-60],[2100,0,-60],[2100,0,100],[2200,0,100],[2200,0,-60]]],["stopeS","PLOČICE",[[4210,-8,-60],[4210,0,-60],[4210,0,100],[4210,-8,100],[4310,-8,-60],[4310,0,-60],[4310,0,100],[4310,-8,100],[4210,-8,-60],[4210,0,-60],[4310,0,-60],[4310,-8,-60],[4210,-8,100],[4210,0,100],[4310,0,100],[4310,-8,100],[4210,-8,-60],[4210,-8,100],[4310,-8,100],[4310,-8,-60],[4210,0,-60],[4210,0,100],[4310,0,100],[4310,0,-60]]],["stopeP","PLOČICE",[[-10,-8,1300],[-10,0,1300],[-10,0,1460],[-10,-8,1460],[90,-8,1300],[90,0,1300],[90,0,1460],[90,-8,1460],[-10,-8,1300],[-10,0,1300],[90,0,1300],[90,-8,1300],[-10,-8,1460],[-10,0,1460],[90,0,1460],[90,-8,1460],[-10,-8,1300],[-10,-8,1460],[90,-8,1460],[90,-8,1300],[-10,0,1300],[-10,0,1460],[90,0,1460],[90,0,1300]]],["stopeP","PLOČICE",[[1390,-8,1300],[1390,0,1300],[1390,0,1460],[1390,-8,1460],[1490,-8,1300],[1490,0,1300],[1490,0,1460],[1490,-8,1460],[1390,-8,1300],[1390,0,1300],[1490,0,1300],[1490,-8,1300],[1390,-8,1460],[1390,0,1460],[1490,0,1460],[1490,-8,1460],[1390,-8,1300],[1390,-8,1460],[1490,-8,1460],[1490,-8,1300],[1390,0,1300],[1390,0,1460],[1490,0,1460],[1490,0,1300]]],["stopeP","PLOČICE",[[4210,-8,1300],[4210,0,1300],[4210,0,1460],[4210,-8,1460],[4310,-8,1300],[4310,0,1300],[4310,0,1460],[4310,-8,1460],[4210,-8,1300],[4210,0,1300],[4310,0,1300],[4310,-8,1300],[4210,-8,1460],[4210,0,1460],[4310,0,1460],[4310,-8,1460],[4210,-8,1300],[4210,-8,1460],[4310,-8,1460],[4310,-8,1300],[4210,0,1300],[4210,0,1460],[4310,0,1460],[4310,0,1300]]],["PS-a","KROV",[[0,2048,0],[0,2088,0],[0,2092,80],[0,2052,80],[2150,2048,0],[2150,2088,0],[2150,2092,80],[2150,2052,80],[0,2048,0],[0,2088,0],[2150,2088,0],[2150,2048,0],[0,2052,80],[0,2092,80],[2150,2092,80],[2150,2052,80],[0,2048,0],[0,2052,80],[2150,2052,80],[2150,2048,0],[0,2088,0],[0,2092,80],[2150,2092,80],[2150,2088,0]]],["PS-b","KROV",[[2150,2048,0],[2150,2088,0],[2150,2092,80],[2150,2052,80],[4300,2048,0],[4300,2088,0],[4300,2092,80],[4300,2052,80],[2150,2048,0],[2150,2088,0],[4300,2088,0],[4300,2048,0],[2150,2052,80],[2150,2092,80],[4300,2092,80],[4300,2052,80],[2150,2048,0],[2150,2052,80],[4300,2052,80],[4300,2048,0],[2150,2088,0],[2150,2092,80],[4300,2092,80],[4300,2088,0]]],["PM-p","KROV",[[-5,2090,930],[-5,2096,930],[-5,2098,970],[-5,2092,970],[35,2090,930],[35,2096,930],[35,2098,970],[35,2092,970],[-5,2090,930],[-5,2096,930],[35,2096,930],[35,2090,930],[-5,2092,970],[-5,2098,970],[35,2098,970],[35,2092,970],[-5,2090,930],[-5,2092,970],[35,2092,970],[35,2090,930],[-5,2096,930],[-5,2098,970],[35,2098,970],[35,2096,930]]],["PM-p","KROV",[[1055,2090,930],[1055,2096,930],[1055,2098,970],[1055,2092,970],[1095,2090,930],[1095,2096,930],[1095,2098,970],[1095,2092,970],[1055,2090,930],[1055,2096,930],[1095,2096,930],[1095,2090,930],[1055,2092,970],[1055,2098,970],[1095,2098,970],[1095,2092,970],[1055,2090,930],[1055,2092,970],[1095,2092,970],[1095,2090,930],[1055,2096,930],[1055,2098,970],[1095,2098,970],[1095,2096,930]]],["PM-p","KROV",[[2120,2090,930],[2120,2096,930],[2120,2098,970],[2120,2092,970],[2180,2090,930],[2180,2096,930],[2180,2098,970],[2180,2092,970],[2120,2090,930],[2120,2096,930],[2180,2096,930],[2180,2090,930],[2120,2092,970],[2120,2098,970],[2180,2098,970],[2180,2092,970],[2120,2090,930],[2120,2092,970],[2180,2092,970],[2180,2090,930],[2120,2096,930],[2120,2098,970],[2180,2098,970],[2180,2096,930]]],["PM-p","KROV",[[3205,2090,930],[3205,2096,930],[3205,2098,970],[3205,2092,970],[3245,2090,930],[3245,2096,930],[3245,2098,970],[3245,2092,970],[3205,2090,930],[3205,2096,930],[3245,2096,930],[3245,2090,930],[3205,2092,970],[3205,2098,970],[3245,2098,970],[3245,2092,970],[3205,2090,930],[3205,2092,970],[3245,2092,970],[3245,2090,930],[3205,2096,930],[3205,2098,970],[3245,2098,970],[3245,2096,930]]],["PM-p","KROV",[[4265,2090,930],[4265,2096,930],[4265,2098,970],[4265,2092,970],[4305,2090,930],[4305,2096,930],[4305,2098,970],[4305,2092,970],[4265,2090,930],[4265,2096,930],[4305,2096,930],[4305,2090,930],[4265,2092,970],[4265,2098,970],[4305,2098,970],[4305,2092,970],[4265,2090,930],[4265,2092,970],[4305,2092,970],[4305,2090,930],[4265,2096,930],[4265,2098,970],[4305,2098,970],[4305,2096,930]]],["Č","KROV",[[0,2075,1900],[0,2175,1900],[0,2177,1950],[0,2077,1950],[4300,2075,1900],[4300,2175,1900],[4300,2177,1950],[4300,2077,1950],[0,2075,1900],[0,2175,1900],[4300,2175,1900],[4300,2075,1900],[0,2077,1950],[0,2177,1950],[4300,2177,1950],[4300,2077,1950],[0,2075,1900],[0,2077,1950],[4300,2077,1950],[4300,2075,1900],[0,2175,1900],[0,2177,1950],[4300,2177,1950],[4300,2175,1900]]]];
+const $=id=>document.getElementById(id);
+const C={steel:0x3b4144,mesh:0x9aa3a8,ground:0x6d7275,plate:0x8a6d3b,kont:0x7c8488,kanta:0x3e7a4b,whl:0x15181a,rail:0x9aa3a8,lim:0x464c50,
+  kr:[0x2d5d62,0x7a4e2d,0x4a5a8a]};
+// Varijanta H2: 4400, sva tri prednja stupa zakrenuta (40 po širini, 80 po dubini, ispod N), SP2 uz desni rub stope
+const DX=100, L=4300+DX, D=1400;
+const S1=[0,40], S2=[1440,1480], S3=[4360,4400];
+const TR={z0:1420,t:40,gap:15,ov:40,y0:90,y1:2010};
+// kontejneri: Europlast 1100 (klizni poklopac) i ESE 1100 (ravni poklopac); kante ESE 240 zakrenute uz lijevi bok
+const KO=[{x0:1522,w:1380,d:1070,h:1450},{x0:2944,w:1373,d:1073,h:1354}], KOZ=60;
+const KA={w:583,d:737,h:1079}, KANTE=[{x:60,z:60},{x:60,z:683}];
+let view='iso',showRoof=true,showMr=true,showKo=true,want='0';
+const stage=$('stage');let renderer,scene,cam,root,leaves=[],tgt=new THREE.Vector3(),sph={r:7200,th:-0.55,ph:1.05};
+function init(){
+  try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true})}catch(e){stage.insertAdjacentHTML('afterbegin','<div class="err">3D se ne može prikazati na ovom uređaju.</div>');return}
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));stage.prepend(renderer.domElement);
+  scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(38,1,5,60000);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x5d6870,.95));const dl=new THREE.DirectionalLight(0xffffff,.6);dl.position.set(-2,4,3);scene.add(dl);
+  new ResizeObserver(resize).observe(stage);resize();controls();build();setView('iso');requestAnimationFrame(loop);
+}
+function resize(){if(!renderer)return;const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.fov=w<500?52:38;cam.updateProjectionMatrix()}
+function quad(vs){const pos=[];for(let f=0;f<vs.length/4;f++){const q=vs.slice(f*4,f*4+4);[[0,1,2],[0,2,3]].forEach(t=>t.forEach(i=>pos.push(q[i][0],q[i][1],q[i][2])))}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.computeVertexNormals();return g}
+const FACES=[[0,1,2,3],[5,4,7,6],[4,0,3,7],[1,5,6,2],[3,2,6,7],[4,5,1,0]];
+const box8=P8=>{const o=[];FACES.forEach(f=>f.forEach(i=>o.push(P8[i])));return quad(o)};
+const sbox=(x0,x1,y0,y1,z0,z1)=>box8([[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]]);
+const zbox=(x0,x1,z0,z1,ya0,ya1,yb0,yb1)=>box8([[x0,ya0,z0],[x1,ya0,z0],[x1,ya1,z0],[x0,ya1,z0],[x0,yb0,z1],[x1,yb0,z1],[x1,yb1,z1],[x0,yb1,z1]]);
+const mat=(c,o)=>new THREE.MeshLambertMaterial(Object.assign({color:c,side:THREE.DoubleSide},o||{}));
+const edge=g=>new THREE.LineSegments(new THREE.EdgesGeometry(g,20),new THREE.LineBasicMaterial({color:0x000000,transparent:true,opacity:.22}));
+function addB(par,g,c,o,e){const m=new THREE.Mesh(g,mat(c,o));par.add(m);if(e!==false)par.add(edge(g));return m}
+function lines(par,p){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+  const l=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:C.mesh,transparent:true,opacity:.6}));l.name='mr';l.visible=showMr;par.add(l)}
+function panelX(par,x0,x1,y0,y1,z0,z1,t,c){c=c||C.steel;
+  addB(par,sbox(x0,x0+t,y0,y1,z0,z1),c);addB(par,sbox(x1-t,x1,y0,y1,z0,z1),c);
+  addB(par,sbox(x0+t,x1-t,y0,y0+t,z0,z1),c);addB(par,sbox(x0+t,x1-t,y1-t,y1,z0,z1),c);
+  const z=(z0+z1)/2,p=[];for(let x=x0+t+50;x<x1-t;x+=50)p.push(x,y0+t,z,x,y1-t,z);
+  for(let y=y0+t+50;y<y1-t;y+=50)p.push(x0+t,y,z,x1-t,y,z);lines(par,p)}
+function panelZ(par,x0,x1,z0,z1,y0,ya,yb,t){const k=(yb-ya)/(z1-z0),top=z=>ya+k*(z-z0);
+  addB(par,zbox(x0,x1,z0,z0+t,y0,top(z0),y0,top(z0+t)),C.steel);addB(par,zbox(x0,x1,z1-t,z1,y0,top(z1-t),y0,top(z1)),C.steel);
+  addB(par,zbox(x0,x1,z0+t,z1-t,y0,y0+t,y0,y0+t),C.steel);addB(par,zbox(x0,x1,z0+t,z1-t,top(z0+t)-t,top(z0+t),top(z1-t)-t,top(z1-t)),C.steel);
+  const x=(x0+x1)/2,p=[];for(let z=z0+t+50;z<z1-t;z+=50)p.push(x,y0+t,z,x,top(z)-t,z);
+  for(let y=y0+t+50;y<Math.min(top(z0+t),top(z1-t))-t;y+=50)p.push(x,y,z0+t,x,y,z1-t);lines(par,p)}
+const rogDno=z=>1998+87*z/1900;
+// kostur 4300 → 4400 (sve desno od x 4200 +100) i zakretanje prednjih stupova
+function kostur(){return KOSTUR.map(([id,grp,vs])=>{vs=vs.map(v=>[v[0]>=4200?v[0]+DX:v[0],v[1],v[2]]);
+  const xs=vs.map(v=>v[0]),mn=Math.min(...xs);
+  const post=S=>v=>[v[0]===mn?S[0]:S[1],v[1],v[2]===1360?1320:v[2]];
+  let f=v=>v;
+  if(id==='SP1')f=post(S1);else if(id==='SP2')f=post(S2);else if(id==='SP3')f=post(S3);
+  else if(id==='DP1')f=v=>[v[0]===80?S1[1]:S2[0],v[1],v[2]];
+  else if(id==='TP')f=v=>[v[0]===1480?S2[1]:S3[0],v[1],v[2]];
+  else if(id==='DB1'||id==='DB2')f=v=>[v[0],v[1],v[2]===1360?1320:v[2]];
+  return [id,grp,vs.map(f)]})}
+// krila: lijevo (kante) i 2 teleskopska desna (kontejneri)
+function plan(){const o=TR.ov,R=S3[0],p=S2[1],W=R-p,rw=(W+3*o)/2,lw=S2[0]-S1[1]+2*o,zt=i=>TR.z0+i*(TR.t+TR.gap);
+  const ks=[{w:lw,x0:S1[1]-o,z:zt(0),c:0,open:{L:R+o-lw,R:S1[1]-o}}];
+  for(let i=0;i<2;i++){const x0=p-o+i*(rw-o);ks.push({w:rw,x0,z:zt(i+1),c:i+1,open:{L:x0,R:p-rw}})}
+  return {ks,zmax:zt(3)}}
+function build(){
+  if(!scene)return;if(root)scene.remove(root);root=new THREE.Group();scene.add(root);const P=plan();
+  addB(root,sbox(-600,L+600,-90,-8,-700,D+1000),C.ground,{},false);
+  const roof=new THREE.Group();roof.name='krov';root.add(roof);
+  kostur().forEach(([id,grp,vs])=>addB(grp==='KROV'?roof:root,quad(vs),grp==='PLOČICE'?C.plate:C.steel));
+  // pokrov: trapezni lim preko podrožnica (pad prema natrag)
+  {const yr=z=>2090+0.045*z;
+   addB(roof,zbox(-40,L+40,-40,1940,yr(-40)+2,yr(-40)+6,yr(1940)+2,yr(1940)+6),C.lim);
+   for(let x=-10;x<L+40;x+=200)addB(roof,zbox(x,Math.min(x+50,L+40),-40,1940,yr(-40)+6,yr(-40)+38,yr(1940)+6,yr(1940)+38),C.lim)}
+  roof.visible=showRoof;
+  [[80,2110],[2190,4220+DX]].forEach(([x0,x1])=>panelX(root,x0-40,x1+40,50,1960,-30,0,30));
+  panelZ(root,-30,0,0,D,50,rogDno(0),rogDno(D),30);
+  panelZ(root,L,L+30,0,D,50,rogDno(0),rogDno(D),30);
+  addB(root,sbox(0,L,0,30,D,P.zmax+5),C.steel);
+  for(let i=0;i<3;i++){const z=TR.z0+i*(TR.t+TR.gap)+TR.t/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(10,10,L,14),mat(C.rail));r.rotation.z=Math.PI/2;r.position.set(L/2,40,z);root.add(r)}
+  addB(root,sbox(0,L,2030,2060,D,P.zmax+5),C.steel);
+  leaves=P.ks.map(k=>{const g=new THREE.Group();root.add(g);panelX(g,k.x0,k.x0+k.w,TR.y0,TR.y1,k.z,k.z+TR.t,40,C.kr[k.c]);
+    [k.x0+90,k.x0+k.w-90].forEach(x=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(40,40,24,24),mat(C.whl));w.rotation.x=Math.PI/2;w.position.set(x,50,k.z+TR.t/2);g.add(w)});
+    return {g,k,x:0}});
+  const kg=new THREE.Group();kg.name='kont';kg.visible=showKo;root.add(kg);
+  const tb=(x0,x1,y0,y1,z0,z1,f)=>box8([[x0+f,y0,z0+f],[x1-f,y0,z0+f],[x1,y1,z0],[x0,y1,z0],[x0+f,y0,z1-f],[x1-f,y0,z1-f],[x1,y1,z1],[x0,y1,z1]]);
+  const cyl=(par,r,len,x,y,z,c)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,18),mat(c));m.rotation.z=Math.PI/2;m.position.set(x,y,z);par.add(m)};
+  KO.forEach(K=>{const x0=K.x0,x1=x0+K.w,z0=KOZ,z1=KOZ+K.d;
+    addB(kg,tb(x0+20,x1-20,150,K.h-70,z0+20,z1-20,45),C.kont);addB(kg,tb(x0,x1,K.h-70,K.h,z0,z1,0),C.kont);
+    [[x0+110,z0+120],[x1-110,z0+120],[x0+110,z1-120],[x1-110,z1-120]].forEach(([x,z])=>{cyl(kg,75,40,x,75,z,C.whl);addB(kg,tb(x-35,x+35,150,175,z-35,z+35,0),C.rail)});
+    cyl(kg,14,K.w-160,(x0+x1)/2,K.h-260,z1+15,C.rail)});
+  // kante zakrenute: ručke i kotači uz lijevi bok, poklopac se otvara prema unutra
+  KANTE.forEach(k=>{const g=new THREE.Group();g.position.set(k.x+KA.d/2,0,k.z+KA.w/2);g.rotation.y=-Math.PI/2;kg.add(g);
+    const x0=-KA.w/2,x1=KA.w/2,z0=-KA.d/2,z1=KA.d/2;
+    addB(g,tb(x0+15,x1-15,0,KA.h-75,z0+15,z1-40,35),C.kanta);addB(g,tb(x0,x1,KA.h-75,KA.h-40,z0,z1-10,0),C.kanta);
+    cyl(g,100,40,x0+40,100,z1-90,C.whl);cyl(g,100,40,x1-40,100,z1-90,C.whl);cyl(g,14,KA.w-120,0,KA.h-40,z1+5,C.kanta)});
+  // vreće uz kante
+  {const cx=(60+KA.d+S2[0])/2+10;[330,900].forEach(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(250,230,800,20),mat(0x2b2f31,{transparent:true,opacity:.7}));m.position.set(cx,400,z);kg.add(m)})}
+}
+function goal(l){return want==='0'?l.k.x0:l.k.open[want]}
+function setDoor(d){want=d;document.querySelectorAll('[data-d]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d))}
+function setView(v){view=v;document.querySelectorAll('[data-v]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+  if(v==='iso'){tgt.set(L/2,800,800);sph={r:7400,th:-0.55,ph:1.08}}
+  if(v==='front'){tgt.set(L/2,1000,800);sph={r:7000,th:0,ph:1.5}}
+  if(v==='top'){tgt.set(L/2,0,800);sph={r:6800,th:0,ph:0.03};setRoof(false)}}
+function setRoof(v){showRoof=v;$('bKrov').setAttribute('aria-pressed',v);const r=root&&root.getObjectByName('krov');if(r)r.visible=v}
+document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>setDoor(b.dataset.d));
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+$('bKrov').onclick=()=>setRoof(!showRoof);
+$('bMr').onclick=()=>{showMr=!showMr;$('bMr').setAttribute('aria-pressed',showMr);root&&root.traverse(o=>{if(o.name==='mr')o.visible=showMr})};
+$('bKo').onclick=()=>{showKo=!showKo;$('bKo').setAttribute('aria-pressed',showKo);const k=root&&root.getObjectByName('kont');if(k)k.visible=showKo};
+function controls(){const el=renderer.domElement;const pts=new Map();let pd=0;
+  el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY})});
+  el.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const o=pts.get(e.pointerId);const dx=e.clientX-o.x,dy=e.clientY-o.y;
+    if(pts.size===1){sph.th-=dx*.008;sph.ph=Math.max(.03,Math.min(1.62,sph.ph-dy*.008))}
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){const [p,q]=[...pts.values()];const dd=Math.hypot(p.x-q.x,p.y-q.y);if(pd)sph.r=Math.max(300,Math.min(16000,sph.r*pd/dd));pd=dd}});
+  const up=e=>{pts.delete(e.pointerId);if(pts.size<2)pd=0};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+  el.addEventListener('wheel',e=>{e.preventDefault();sph.r=Math.max(300,Math.min(16000,sph.r*(1+e.deltaY*.001)))},{passive:false})}
+let last=0;
+function loop(t){requestAnimationFrame(loop);const dt=last?Math.min(0.05,(t-last)/1000):0;last=t;
+  leaves.forEach(l=>{const gx=goal(l),cx=l.k.x0+l.x,dd=gx-cx,v=900*dt;l.x+=Math.abs(dd)<=v?dd:Math.sign(dd)*v;l.g.position.x=l.x});
+  cam.position.set(tgt.x+sph.r*Math.sin(sph.ph)*Math.sin(sph.th),tgt.y+sph.r*Math.cos(sph.ph),tgt.z+sph.r*Math.sin(sph.ph)*Math.cos(sph.th));
+  cam.lookAt(tgt);renderer.render(scene,cam)}
+init();
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches)setTimeout(()=>{if(want==='0')setDoor('R')},1400);
+</script>
