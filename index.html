@@ -1,5 +1,5 @@
 <!doctype html><html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>SPZ 79/81</title>
+<title>Spremište za kontejnere</title>
 <style>
 :root{
   --bg:#eef0ef; --panel:#ffffff; --fg:#1a1f22; --mut:#5a656c; --line:#d3d8d7; --scene:#dfe4e3; --acc:#2d5d62;
@@ -32,7 +32,7 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap">
 
 <div class="wrap">
-  <h1>SPZ 79/81 · spremište za kontejnere</h1>
+  <h1>Spremište za kontejnere · dva ulaza na kliznim vratima</h1>
   <div class="stage" id="stage">
     <div class="hint">vrti prstom · dva prsta zoom</div>
     <div class="doors" role="group" aria-label="Vrata">
@@ -50,13 +50,17 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
     <button type="button" id="bMr" aria-pressed="true">Sva mreža</button>
     <button type="button" id="bKo" aria-pressed="true">Kontejneri</button>
   </div>
+  <div class="row" role="group" aria-label="Raspored kanti">
+    <button type="button" data-ras="bok" aria-pressed="true">Kante uz bok, vreće do kontejnera</button>
+    <button type="button" data-ras="kont" aria-pressed="false">Kante do kontejnera, vreće uz bok</button>
+  </div>
   <section>
     <h2>Ukratko</h2>
     <ul>
       <li>Gabarit 4,40 × 1,40 m, visina oko 2,0 m. Krov ima prepust 0,5 m nad ulazom i pad prema natrag, pa voda ne curi na ulaz.</li>
       <li>Dva ulaza na kliznim vratima: široki za dva kontejnera 1100 L (svijetli otvor oko 2,88 m) i manji za kante 240 L (oko 1,40 m).</li>
       <li>Oba kontejnera izlaze ravno van, svaki sam, bez micanja drugoga.</li>
-      <li>Dvije kante stoje uz bok, s poklopcima okrenutima prema unutra. Uz njih je mjesto za vreće, odmah iza vrata.</li>
+      <li>Dvije kante stoje jedna iza druge, s poklopcima okrenutima prema vrećama. Mogu stajati uz bok ili do kontejnera, a mjesto za vreće je uz njih, odmah iza vrata.</li>
       <li>Čelična konstrukcija s mrežom u okvirima, pokrov od lima.</li>
     </ul>
   </section>
@@ -74,7 +78,9 @@ const S1=[0,40], S2=[1440,1480], S3=[4360,4400];
 const TR={z0:1420,t:40,gap:15,ov:40,y0:90,y1:2010};
 // kontejneri: Europlast 1100 (klizni poklopac) i ESE 1100 (ravni poklopac); kante ESE 240 zakrenute uz lijevi bok
 const KO=[{x0:1522,w:1380,d:1070,h:1450},{x0:2944,w:1373,d:1073,h:1354}], KOZ=60;
-const KA={w:583,d:737,h:1079}, KANTE=[{x:60,z:60},{x:60,z:683}];
+const KA={w:583,d:737,h:1079};
+// rasporedi: bok = kante uz lijevi bok (ručke uz bok), kont = kante do kontejnera (ručke prema srednjem stupu); poklopci se otvaraju prema vrećama
+const RAS={bok:{x:60,rot:-Math.PI/2,vx:[60+737+20,1420]},kont:{x:1420-737,rot:Math.PI/2,vx:[60,1420-737-20]}};let ras='bok';
 let view='iso',showRoof=true,showMr=true,showKo=true,want='0';
 const stage=$('stage');let renderer,scene,cam,root,leaves=[],tgt=new THREE.Vector3(),sph={r:7200,th:-0.55,ph:1.05};
 function init(){
@@ -149,12 +155,12 @@ function build(){
     [[x0+110,z0+120],[x1-110,z0+120],[x0+110,z1-120],[x1-110,z1-120]].forEach(([x,z])=>{cyl(kg,75,40,x,75,z,C.whl);addB(kg,tb(x-35,x+35,150,175,z-35,z+35,0),C.rail)});
     cyl(kg,14,K.w-160,(x0+x1)/2,K.h-260,z1+15,C.rail)});
   // kante zakrenute: ručke i kotači uz lijevi bok, poklopac se otvara prema unutra
-  KANTE.forEach(k=>{const g=new THREE.Group();g.position.set(k.x+KA.d/2,0,k.z+KA.w/2);g.rotation.y=-Math.PI/2;kg.add(g);
+  const RS=RAS[ras];[60,683].forEach(z=>{const g=new THREE.Group();g.position.set(RS.x+KA.d/2,0,z+KA.w/2);g.rotation.y=RS.rot;kg.add(g);
     const x0=-KA.w/2,x1=KA.w/2,z0=-KA.d/2,z1=KA.d/2;
     addB(g,tb(x0+15,x1-15,0,KA.h-75,z0+15,z1-40,35),C.kanta);addB(g,tb(x0,x1,KA.h-75,KA.h-40,z0,z1-10,0),C.kanta);
     cyl(g,100,40,x0+40,100,z1-90,C.whl);cyl(g,100,40,x1-40,100,z1-90,C.whl);cyl(g,14,KA.w-120,0,KA.h-40,z1+5,C.kanta)});
   // vreće uz kante
-  {const cx=(60+KA.d+S2[0])/2+10;[330,900].forEach(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(250,230,800,20),mat(0x2b2f31,{transparent:true,opacity:.7}));m.position.set(cx,400,z);kg.add(m)})}
+  {const cx=(RS.vx[0]+RS.vx[1])/2;[330,900].forEach(z=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(250,230,800,20),mat(0x2b2f31,{transparent:true,opacity:.7}));m.position.set(cx,400,z);kg.add(m)})}
 }
 function goal(l){return want==='0'?l.k.x0:l.k.open[want]}
 function setDoor(d){want=d;document.querySelectorAll('[data-d]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d))}
@@ -165,6 +171,7 @@ function setView(v){view=v;document.querySelectorAll('[data-v]').forEach(b=>b.se
 function setRoof(v){showRoof=v;$('bKrov').setAttribute('aria-pressed',v);const r=root&&root.getObjectByName('krov');if(r)r.visible=v}
 document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>setDoor(b.dataset.d));
 document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+document.querySelectorAll('[data-ras]').forEach(b=>b.onclick=()=>{ras=b.dataset.ras;document.querySelectorAll('[data-ras]').forEach(c=>c.setAttribute('aria-pressed',c===b));const w=want,xs=leaves.map(l=>l.x);build();leaves.forEach((l,i)=>{l.x=xs[i];l.g.position.x=l.x});want=w});
 $('bKrov').onclick=()=>setRoof(!showRoof);
 $('bMr').onclick=()=>{showMr=!showMr;$('bMr').setAttribute('aria-pressed',showMr);root&&root.traverse(o=>{if(o.name==='mr')o.visible=showMr})};
 $('bKo').onclick=()=>{showKo=!showKo;$('bKo').setAttribute('aria-pressed',showKo);const k=root&&root.getObjectByName('kont');if(k)k.visible=showKo};
