@@ -71,7 +71,8 @@ ul{margin:0;padding-left:20px;display:grid;gap:6px;max-width:70ch}
       <li>Dva ulaza na kliznim vratima: široki za dva kontejnera 1100 L (svijetli otvor oko 2,88 m) i manji za kante 240 L (oko 1,40 m).</li>
       <li>Oba kontejnera izlaze ravno van, svaki sam, bez micanja drugoga.</li>
       <li>Dvije kante stoje jedna iza druge, s poklopcima okrenutima prema vrećama. Mogu stajati uz bok ili do kontejnera, a mjesto za vreće je uz njih, odmah iza vrata.</li>
-      <li>Čelična konstrukcija s mrežom u okvirima, pokrov od lima.</li>
+      <li>Čelična konstrukcija. Stražnja strana i lijevi bok zatvoreni su trapeznim limom u antracit boji (RAL 7016), ostale strane mrežom u okvirima. Pokrov od lima.</li>
+      <li>Straga krov ima prepust 15 cm s okapnicom, pa voda s krova ne curi niz stražnji lim.</li>
     </ul>
   </section>
 </div>
@@ -137,6 +138,12 @@ function panelZ(par,x0,x1,z0,z1,y0,ya,yb,t){const k=(yb-ya)/(z1-z0),top=z=>ya+k*
   const x=(x0+x1)/2,p=[];for(let z=z0+t+50;z<z1-t;z+=50)p.push(x,y0+t,z,x,top(z)-t,z);
   for(let y=y0+t+50;y<Math.min(top(z0+t),top(z1-t))-t;y+=50)p.push(x,y,z0+t,x,y,z1-t);lines(par,p)}
 const rogDno=z=>1998+87*z/1900;
+// ispune po plohama (postavka): 'lim' = trapezni lim T18 na vanjskom licu, 'mreza' = mreža u okviru
+const ISP={straga:'lim',lijevo:'lim',desno:'mreza',limBoja:0x383e42,korak:137.5,val:18,prepustStraga:150};
+function limX(par,x0,x1,y0,y1){addB(par,sbox(x0,x1,y0,y1,-2,0),ISP.limBoja);
+  for(let x=x0+70;x<x1-20;x+=ISP.korak)addB(par,sbox(x-16,x+16,y0,y1,-2-ISP.val,-2),ISP.limBoja)}
+function limZ(par,z0,z1,y0,top){addB(par,zbox(-2,0,z0,z1,y0,top(z0),y0,top(z1)),ISP.limBoja);
+  for(let z=z0+70;z<z1-20;z+=ISP.korak)addB(par,zbox(-2-ISP.val,-2,z-16,z+16,y0,top(z-16),y0,top(z+16)),ISP.limBoja)}
 // kostur 4300 → 4400 (sve desno od x 4200 +100) i zakretanje prednjih stupova
 function kostur(){return KOSTUR.map(([id,grp,vs])=>{vs=vs.map(v=>[v[0]>=4200?v[0]+DX:v[0],v[1],v[2]]);
   const xs=vs.map(v=>v[0]),mn=Math.min(...xs);
@@ -162,12 +169,23 @@ function build(){
   const roof=new THREE.Group();roof.name='krov';root.add(roof);
   kostur().forEach(([id,grp,vs])=>addB(grp==='KROV'?roof:root,quad(vs),grp==='PLOČICE'?C.plate:C.steel));
   // pokrov: trapezni lim preko podrožnica (pad prema natrag)
-  {const yr=z=>2090+0.045*z;
-   addB(roof,zbox(-40,L+40,-40,1940,yr(-40)+2,yr(-40)+6,yr(1940)+2,yr(1940)+6),C.lim);
-   for(let x=-10;x<L+40;x+=200)addB(roof,zbox(x,Math.min(x+50,L+40),-40,1940,yr(-40)+6,yr(-40)+38,yr(1940)+6,yr(1940)+38),C.lim)}
+  {const yr=z=>2090+0.045*z,zb=-ISP.prepustStraga;
+   addB(roof,zbox(-40,L+40,zb,1940,yr(zb)+2,yr(zb)+6,yr(1940)+2,yr(1940)+6),C.lim);
+   for(let x=-10;x<L+40;x+=200)addB(roof,zbox(x,Math.min(x+50,L+40),zb,1940,yr(zb)+6,yr(zb)+38,yr(1940)+6,yr(1940)+38),C.lim);
+   // nastavci rogova za stražnji prepust
+   kostur().filter(([id,grp])=>grp==='KROV'&&/^R\d/.test(id)).forEach(([id,grp,vs])=>{const xs=vs.map(v=>v[0]),a=Math.min(...xs),b=Math.max(...xs);
+     addB(roof,zbox(a,b,zb,0,rogDno(zb),rogDno(zb)+50,rogDno(0),rogDno(0)+50),C.steel)})}
   roof.visible=showRoof;
-  [[80,2110],[2190,4220+DX]].forEach(([x0,x1])=>panelX(root,x0-40,x1+40,50,1960,-30,0,30));
-  panelZ(root,-30,0,0,D,50,rogDno(0),rogDno(D),30);
+  // stražnja ploha: lim ili mreža
+  if(ISP.straga==='lim'){limX(root,0,L,50,rogDno(0));
+    addB(root,sbox(80,2110,980,1020,0,60),C.steel);addB(root,sbox(2190,4220+DX,980,1020,0,60),C.steel);
+    addB(root,sbox(2110,2190,130,1920,40,80),C.steel);
+    addB(root,sbox(-24,L+24,rogDno(0)-14,rogDno(0)+2,-48,0),ISP.limBoja);addB(root,sbox(-24,L+24,rogDno(0)-44,rogDno(0)+2,-50,-46),ISP.limBoja)}
+  else [[80,2110],[2190,4220+DX]].forEach(([x0,x1])=>panelX(root,x0-40,x1+40,50,1960,-30,0,30));
+  // lijevi bok: lim ili mreža
+  if(ISP.lijevo==='lim'){limZ(root,0,D,50,z=>rogDno(z));addB(root,sbox(0,40,980,1020,40,1320),C.steel)}
+  else panelZ(root,-30,0,0,D,50,rogDno(0),rogDno(D),30);
+  if(ISP.straga==='lim'&&ISP.lijevo==='lim'){const t=rogDno(0);addB(root,sbox(-24,0,50,t,-24,-21),ISP.limBoja);addB(root,sbox(-24,-21,50,t,-24,0),ISP.limBoja)}
   panelZ(root,L,L+30,0,D,50,rogDno(0),rogDno(D),30);
   addB(root,sbox(0,L,0,30,D,P.zmax+5),C.steel);
   const xo=-(P.out||0);for(let i=0;i<P.n;i++){const z=TR.z0+i*(TR.t+TR.gap)+TR.t/2;const r=new THREE.Mesh(new THREE.CylinderGeometry(10,10,L-xo,14),mat(C.rail));r.rotation.z=Math.PI/2;r.position.set((L+xo)/2,40,z);root.add(r)}
